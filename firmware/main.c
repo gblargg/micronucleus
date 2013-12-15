@@ -35,11 +35,7 @@ static void leaveBootloader( void ) __attribute__((noreturn)); // optimization
 #include "bootloaderconfig.h"
 #include "usbdrv/usbdrv.h"
 
-enum { flag_run   = 1<<0 };
-enum { flag_write = 1<<1 };
-enum { flag_erase = 1<<2 };
-
-register uchar  globalFlags asm( "r3" ); // register saves 14 bytes
+static uchar    prevCommand;
 static unsigned currentAddress;
 
 #ifndef boot_page_fill_clear
@@ -83,26 +79,21 @@ uchar usbFunctionSetup( uchar data [8] )
 		MICRONUCLEUS_WRITE_SLEEP
 	};
 	
+	uchar result = 0;
+	
 	if ( rq->bRequest == 0 ) // device info
 	{
 		usbMsgPtr = (usbMsgPtr_t) replyBuffer;
-		return sizeof replyBuffer;
+		result = sizeof replyBuffer;
 	}
 	else if ( rq->bRequest == 1 ) // write page
 	{
 		currentAddress = rq->wIndex.word;
-		return USB_NO_MSG; // hands off work to usbFunctionWrite
-	}
-	else if ( rq->bRequest == 2 ) // erase device
-	{
-		globalFlags |= flag_erase;
-	}
-	else // exit
-	{
-		globalFlags |= flag_run;
+		result = USB_NO_MSG; // hands off work to usbFunctionWrite
 	}
 	
-	return 0;
+	prevCommand = rq->bRequest;
+	return result;
 }
 
 // Called multiple times by usbdrv with a few bytes at a time of the page
@@ -138,11 +129,7 @@ uchar usbFunctionWrite( uchar* buf, uchar len )
 	}
 	while ( len -= 2 );
 	
-	if ( currentAddress % SPM_PAGESIZE != 0 )
-		return 0; // not done; tell USB we need more
-	
-	globalFlags |= flag_write;
-	return 1; // tell USB we've received everything
+	return (currentAddress % SPM_PAGESIZE) == 0;
 }
 
 static void leaveBootloader( void )
@@ -231,23 +218,19 @@ int main( void )
 	
 	while ( bootLoaderCondition() )
 	{
-		globalFlags = 0;
-		
 		// Run USB until we have some action to take and that transaction is complete
 		do {
 			wait_usb_interrupt();
 		}
-		while ( !globalFlags || usbCurrentTok != 0 );
+		while ( !prevCommand || usbCurrentTok != 0 );
 		
 		// Now we can ignore USB until our host program makes another request
 		
-		if ( globalFlags & flag_erase )
+		if ( prevCommand == 2 )
 			erase_flash();
-		
-		if ( globalFlags & flag_write )
+		else if ( prevCommand == 1 )
 			write_flash();
-	
-		if ( globalFlags & flag_run )
+		else
 			break;
 	}
 	
