@@ -3,6 +3,7 @@ include bootloaderconfig.inc
 SOURCES += usbdrv/usbdrvasm.S
 SOURCES += usbdrv/oddebug.c
 SOURCES += main.c
+SOURCES += libs-device/osccalASM.S
 
 CFLAGS  += -Wall
 CFLAGS  += -DBOOTLOADER_ADDRESS=$(BOOTLOADER_ADDRESS)

@@ -33,15 +33,16 @@
 
 // Automatic OSCCAL adjustment
 #if AUTO_OSCCAL
-	#define USB_CFG_HAVE_MEASURE_FRAME_LENGTH   1
+	// Not used by asm version
+	//#define USB_CFG_HAVE_MEASURE_FRAME_LENGTH   1
 
 	#ifndef __ASSEMBLER__
-		#include "osccal.h"
+		void calibrateOscillatorASM(void);
 	#endif
 	
 	#define USB_RESET_HOOK(resetStarts) { \
 		if ( !resetStarts ) {\
-			calibrateOscillator();\
+			calibrateOscillatorASM();\
 			osc_calibrated=1;\
 		}\
 	}

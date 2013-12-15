@@ -255,10 +255,6 @@ int main( void )
 	leaveBootloader();
 }
 
-#if AUTO_OSCCAL
-	#include "osccal.c"
-#endif
-
 // prevent useless warning
 USB_PUBLIC usbMsgLen_t usbFunctionDescriptor(struct usbRequest *rq) { return 0; }
 
