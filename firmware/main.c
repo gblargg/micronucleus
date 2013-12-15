@@ -180,8 +180,18 @@ static void initHardware( void )
 
 ISR(USB_INTR_VECTOR);
 
+#if AUTO_OSCCAL
+static volatile uchar osc_not_calibrated = 1;
+#endif
+
 static void wait_usb_interrupt( void )
 {
+	#if AUTO_OSCCAL
+		// don't wait for interrupt until calibrated
+		if ( osc_not_calibrated )
+			goto handled;
+	#endif
+	
 	// Clear any stale pending interrupt, then wait for interrupt flag
 	USB_INTR_PENDING = 1<<USB_INTR_PENDING_BIT;
 	while ( !(USB_INTR_PENDING & (1<<USB_INTR_PENDING_BIT)) )
@@ -206,10 +216,6 @@ handled:
 	usbPoll();
 }
 
-#if AUTO_OSCCAL
-static volatile uchar osc_not_calibrated = 1;
-#endif
-
 extern uchar usbCurrentTok;
 
 int main( void ) __attribute__((noreturn,OS_main)); // optimization
@@ -222,13 +228,6 @@ int main( void )
 	bootLoaderInit();
 	
 	initHardware(); // gives time for jumper pull-ups to stabilize
-	
-	#if AUTO_OSCCAL
-		// Must be done separately since reset checking is done in usbPoll()
-		// and wait_usb_interrupt() doesn't call it repeatedly.
-		while ( osc_not_calibrated )
-			usbPoll();
-	#endif
 	
 	while ( bootLoaderCondition() )
 	{
