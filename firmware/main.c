@@ -115,14 +115,19 @@ uchar usbFunctionWrite( uchar* buf, uchar len )
 		unsigned data = *(uint16_t*) buf;
 		buf += 2;
 		
-		#if PATCH_RESET
+		enum { rjmp_bootloader = BOOTLOADER_ADDRESS/2 - 1 + 0xc000 };
+		
+		#if MICRONUCLEUS_VERSION_MAJOR >= 2
+			if ( currentAddress == RESET_VECTOR_ADDR )
+				data = rjmp_bootloader;
+		#else
 			static unsigned userReset;
 			
 			if ( currentAddress == RESET_VECTOR_ADDR )
 			{
 				// Save app's reset vector and replace with ours
 				userReset = data;
-				data = BOOTLOADER_ADDRESS/2 - 1 + 0xc000; // rjmp BOOTLOADER_ADDR
+				data = rjmp_bootloader;
 			}
 			
 			if ( currentAddress == USER_RESET_ADDR )

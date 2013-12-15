@@ -142,20 +142,14 @@ int micronucleus_writeFlash(micronucleus* deviceHandle, unsigned int program_siz
       }
     }
 
-    // later versions leave it to us to patch reset
+    // later versions leave it to us to put rjmp to user code at end of flash
     if ( deviceHandle->version.major >= 2 )
     {
       // TODO: verify that program_size <= deviceHandle->flash_size - 2
       
       if ( address == 0 ) 
-      {
-        // save user reset vector and replace with bootloader's
+        // save user reset vector (bootloader will patch with its vector)
         userReset = page_buffer [1] * 0x100 + page_buffer [0];
-        unsigned bl_vec = deviceHandle->flash_size/2 + 0xc000 - 1;
-        page_buffer [0] = bl_vec >> 0 & 0xff;
-        page_buffer [1] = bl_vec >> 8 & 0xff;
-        unused = 0;
-      }
       
       if ( address == deviceHandle->flash_size - deviceHandle->page_size )
       {

@@ -10,9 +10,9 @@
 // on or off
 //#define AUTO_OSCCAL 1
 
-// Do reset patching in bootloader rather than letting host do it.
-// Adds 46 bytes. Disabling requires special version of host client.
-#define PATCH_RESET 1
+// Uncomment to enable version 2 protocol that has host do part of reset
+// vector patching. Saves 36 bytes.
+//#define MICRONUCLEUS_VERSION_MAJOR 2
 
 #ifndef __ASSEMBLER__
 
