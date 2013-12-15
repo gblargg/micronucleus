@@ -157,10 +157,6 @@ static void initHardware( void )
 	WDTCR = 1<<WDCE | 1<<WDE;
 	WDTCR = 1<<WDP2 | 1<<WDP1 | 1<<WDP0; // maximum timeout in case WDT is fused on
 	
-	// Required in case user code jumps to bootloader and leaves temporary buffer
-	// partly filled
-	boot_page_fill_clear();
-	
 	usbInit();
 	
 	// Force USB re-enumerate so host sees us
