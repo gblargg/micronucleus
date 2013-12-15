@@ -93,6 +93,9 @@ uchar usbFunctionSetup( uchar data [8] )
 		if ( prevCommand != 1 )
 			currentAddress = 0;
 		
+		// Required in case page is already partially filled
+		boot_page_fill_clear();
+	
 		result = USB_NO_MSG; // hands off work to usbFunctionWrite
 	}
 	
