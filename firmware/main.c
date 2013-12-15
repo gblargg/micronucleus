@@ -35,6 +35,7 @@ static void leaveBootloader( void ) __attribute__((noreturn)); // optimization
 #include "bootloaderconfig.h"
 #include "usbdrv/usbdrv.h"
 
+enum { cmd_written = 0x80 };
 static uchar    prevCommand;
 static unsigned currentAddress;
 
@@ -55,7 +56,10 @@ static unsigned currentAddress;
 static void write_flash( void )
 {
 	if ( currentAddress - 2 < BOOTLOADER_ADDRESS )
+	{
 		boot_page_write( currentAddress - 2 );
+		prevCommand = cmd_written;
+	}
 }
 
 static void erase_flash( void )
@@ -90,7 +94,7 @@ uchar usbFunctionSetup( uchar data [8] )
 	else if ( rq->bRequest == 1 ) // write page
 	{
 		currentAddress = rq->wIndex.word & ~(SPM_PAGESIZE - 1);
-		if ( prevCommand != 1 )
+		if ( prevCommand != cmd_written )
 			currentAddress = 0;
 		
 		// Required in case page is already partially filled
