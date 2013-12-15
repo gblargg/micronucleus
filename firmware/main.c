@@ -54,7 +54,8 @@ static unsigned currentAddress;
 
 static void write_flash( void )
 {
-	boot_page_write( currentAddress - 2 );
+	if ( currentAddress - 2 < BOOTLOADER_ADDRESS )
+		boot_page_write( currentAddress - 2 );
 }
 
 static void erase_flash( void )
@@ -88,7 +89,10 @@ uchar usbFunctionSetup( uchar data [8] )
 	}
 	else if ( rq->bRequest == 1 ) // write page
 	{
-		currentAddress = rq->wIndex.word;
+		currentAddress = rq->wIndex.word & ~(SPM_PAGESIZE - 1);
+		if ( prevCommand != 1 )
+			currentAddress = 0;
+		
 		result = USB_NO_MSG; // hands off work to usbFunctionWrite
 	}
 	
@@ -120,9 +124,6 @@ uchar usbFunctionWrite( uchar* buf, uchar len )
 				data = (userReset + 0x1000 - USER_RESET_ADDR/2) & ~0x1000;
 			}
 		#endif
-		
-		if ( currentAddress >= BOOTLOADER_ADDRESS )
-			break;
 		
 		boot_page_fill( currentAddress, data );
 		currentAddress += 2;
