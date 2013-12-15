@@ -20,7 +20,7 @@ Copyright (c) 2013 Shay Green */
 // needs to be above 4.5 (and a whole integer) as avr freezes for 4.5ms
 #define MICRONUCLEUS_WRITE_SLEEP 8
 
-#define PROGMEM_SIZE BOOTLOADER_ADDRESS
+#define PROGMEM_SIZE USER_RESET_ADDR
 
 #if BOOTLOADER_ADDRESS % SPM_PAGESIZE != 0
 	#error "BOOTLOADER_ADDRESS must be a multiple of page size"
