@@ -43,7 +43,7 @@
 	#define USB_RESET_HOOK(resetStarts) { \
 		if ( !resetStarts ) {\
 			calibrateOscillatorASM();\
-			osc_calibrated=1;\
+			osc_not_calibrated = 0;\
 		}\
 	}
 #endif

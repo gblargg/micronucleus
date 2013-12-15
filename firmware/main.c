@@ -207,7 +207,7 @@ handled:
 }
 
 #if AUTO_OSCCAL
-static volatile uchar osc_calibrated;
+static volatile uchar osc_not_calibrated = 1;
 #endif
 
 extern uchar usbCurrentTok;
@@ -226,7 +226,7 @@ int main( void )
 	#if AUTO_OSCCAL
 		// Must be done separately since reset checking is done in usbPoll()
 		// and wait_usb_interrupt() doesn't call it repeatedly.
-		while ( !osc_calibrated )
+		while ( osc_not_calibrated )
 			usbPoll();
 	#endif
 	
