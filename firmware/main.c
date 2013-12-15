@@ -72,7 +72,7 @@ uchar usbFunctionSetup( uchar data [8] )
 {
 	const usbRequest_t* rq = (const usbRequest_t*) data;
 	
-	static uchar replyBuffer [4] = {
+	static const uchar replyBuffer [4] = {
 		PROGMEM_SIZE >> 8 & 0xff,
 		PROGMEM_SIZE      & 0xff,
 		SPM_PAGESIZE,
@@ -168,7 +168,7 @@ static void initHardware( void )
 ISR(USB_INTR_VECTOR);
 
 #if AUTO_OSCCAL
-static volatile uchar osc_not_calibrated = 1;
+static uchar osc_not_calibrated = 1;
 #endif
 
 static void wait_usb_interrupt( void )
