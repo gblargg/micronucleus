@@ -14,6 +14,10 @@
 // vector patching. Saves 36 bytes.
 //#define MICRONUCLEUS_VERSION_MAJOR 2
 
+// Uncomment to delay rather than erase/write flash, so USB timing can be tested
+// without wearing out device
+//#define SIMULATE_FLASH 1
+
 #ifndef __ASSEMBLER__
 
 // Exits bootloader, calls bootLoaderExit(), then runs user program

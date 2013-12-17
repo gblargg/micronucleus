@@ -15,6 +15,15 @@
 
 #include "bootloaderconfig.h"
 
+#if SIMULATE_FLASH
+	#undef boot_page_erase
+	#define boot_page_erase( addr ) _delay_ms( 5 )
+
+	#undef boot_page_write
+	#define boot_page_write( addr ) _delay_ms( 5 )
+
+#endif
+
 #ifndef MICRONUCLEUS_VERSION_MAJOR
 	#define MICRONUCLEUS_VERSION_MAJOR 1
 	#define MICRONUCLEUS_VERSION_MINOR 10
