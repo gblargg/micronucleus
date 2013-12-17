@@ -35,6 +35,9 @@ static void leaveBootloader( void ) __attribute__((noreturn)); // optimization
 #include "bootloaderconfig.h"
 #include "usbdrv/usbdrv.h"
 
+enum { cmd_info    = 0 };
+enum { cmd_write   = 1 };
+enum { cmd_erase   = 2 };
 enum { cmd_written = 0x80 };
 static uchar    prevCommand;
 static unsigned currentAddress;
@@ -86,12 +89,12 @@ uchar usbFunctionSetup( uchar data [8] )
 	
 	uchar result = 0;
 	
-	if ( rq->bRequest == 0 ) // device info
+	if ( rq->bRequest == cmd_info )
 	{
 		usbMsgPtr = (usbMsgPtr_t) replyBuffer;
 		result = sizeof replyBuffer;
 	}
-	else if ( rq->bRequest == 1 ) // write page
+	else if ( rq->bRequest == cmd_write )
 	{
 		currentAddress = rq->wIndex.word & ~(SPM_PAGESIZE - 1);
 		if ( prevCommand != cmd_written )
@@ -235,9 +238,9 @@ int main( void )
 		
 		// Now we can ignore USB until our host program makes another request
 		
-		if ( prevCommand == 2 )
+		if ( prevCommand == cmd_erase )
 			erase_flash();
-		else if ( prevCommand == 1 )
+		else if ( prevCommand == cmd_write )
 			write_flash();
 		else
 			break;

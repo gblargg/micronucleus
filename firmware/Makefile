@@ -39,7 +39,7 @@ settings:
 
 hex:
 	@mkdir -p obj
-	@avr-gcc -mmcu=$(DEVICE) -DF_CPU=$(F_CPU) $(CFLAGS) $(LDFLAGS) $(LDFLAGS) \
+	@avr-gcc -mmcu=$(DEVICE) -DF_CPU=$(F_CPU) $(CFLAGS) $(LDFLAGS) \
 		-o obj/main.bin -I. $(SOURCES)
 	@avr-objcopy -R .eeprom -R .fuse -R .lock -R .signature -O ihex obj/main.bin obj/main.hex
 
