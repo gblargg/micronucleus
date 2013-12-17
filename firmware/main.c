@@ -203,7 +203,7 @@ static void wait_usb_interrupt( void )
 		USB_INTR_VECTOR();
 		
 		// Wait a little while longer in case another one comes
-		uchar n = 20;
+		uchar n = 250; // about 90us timeout
 		do {
 			if ( !--n )
 				goto handled;
@@ -215,7 +215,10 @@ handled:
 	usbPoll();
 }
 
-extern uchar usbCurrentTok;
+// prevent useless warning
+USB_PUBLIC usbMsgLen_t usbFunctionDescriptor(struct usbRequest *rq) { return 0; }
+
+#include "usbdrv/usbdrv.c" // optimization: helps to have source in same file
 
 int main( void ) __attribute__((noreturn,OS_main)); // optimization
 int main( void )
@@ -231,10 +234,16 @@ int main( void )
 	while ( bootLoaderCondition() )
 	{
 		// Run USB until we have some action to take and that transaction is complete
+		uchar prevTxLen;
 		do {
+			prevTxLen = usbTxLen;
 			wait_usb_interrupt();
 		}
-		while ( !prevCommand || usbCurrentTok != 0 );
+		while ( !(prevCommand != cmd_info &&
+				usbTxLen == USBPID_NAK && prevTxLen != USBPID_NAK) );
+		
+		// Stops once we have a command and we've just transmitted the final reply
+		// back to host
 		
 		// Now we can ignore USB until our host program makes another request
 		
@@ -248,8 +257,3 @@ int main( void )
 	
 	leaveBootloader();
 }
-
-// prevent useless warning
-USB_PUBLIC usbMsgLen_t usbFunctionDescriptor(struct usbRequest *rq) { return 0; }
-
-#include "usbdrv/usbdrv.c" // optimization: helps to have source in same file
