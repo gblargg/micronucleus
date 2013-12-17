@@ -38,7 +38,10 @@ static void leaveBootloader( void ) __attribute__((noreturn)); // optimization
 enum { cmd_info    = 0 };
 enum { cmd_write   = 1 };
 enum { cmd_erase   = 2 };
-enum { cmd_written = 0x80 };
+enum { cmd_fill    = 3 };
+enum { cmd_exit    = 4 };
+enum { cmd_filled  = 0x80 };
+enum { cmd_written  = 0x81 };
 static uchar    prevCommand;
 static unsigned currentAddress;
 
@@ -76,6 +79,17 @@ static void erase_flash( void )
 	while ( addr );
 }
 
+static void fill_flash( unsigned data )
+{
+	enum { rjmp_bootloader = BOOTLOADER_ADDRESS/2 - 1 + 0xc000 };
+	
+	if ( currentAddress == RESET_VECTOR_ADDR )
+		data = rjmp_bootloader;
+	
+	boot_page_fill( currentAddress, data );
+	currentAddress += 2;
+}
+
 uchar usbFunctionSetup( uchar data [8] )
 {
 	const usbRequest_t* rq = (const usbRequest_t*) data;
@@ -88,13 +102,14 @@ uchar usbFunctionSetup( uchar data [8] )
 	};
 	
 	uchar result = 0;
+	uchar bRequest = rq->bRequest;
 	
-	if ( rq->bRequest == cmd_info )
+	if ( bRequest == cmd_info )
 	{
 		usbMsgPtr = (usbMsgPtr_t) replyBuffer;
 		result = sizeof replyBuffer;
 	}
-	else if ( rq->bRequest == cmd_write )
+	else if ( bRequest == cmd_write )
 	{
 		currentAddress = rq->wIndex.word & ~(SPM_PAGESIZE - 1);
 		if ( prevCommand != cmd_written )
@@ -102,50 +117,17 @@ uchar usbFunctionSetup( uchar data [8] )
 		
 		// Required in case page is already partially filled
 		boot_page_fill_clear();
-	
-		result = USB_NO_MSG; // hands off work to usbFunctionWrite
 	}
-	
-	prevCommand = rq->bRequest;
-	return result;
-}
-
-// Called multiple times by usbdrv with a few bytes at a time of the page
-uchar usbFunctionWrite( uchar* buf, uchar len )
-{
-	do
+	else if ( bRequest == cmd_fill )
 	{
-		unsigned data = *(uint16_t*) buf;
-		buf += 2;
-		
-		enum { rjmp_bootloader = BOOTLOADER_ADDRESS/2 - 1 + 0xc000 };
-		
-		#if MICRONUCLEUS_VERSION_MAJOR >= 2
-			if ( currentAddress == RESET_VECTOR_ADDR )
-				data = rjmp_bootloader;
-		#else
-			static unsigned userReset;
-			
-			if ( currentAddress == RESET_VECTOR_ADDR )
-			{
-				// Save app's reset vector and replace with ours
-				userReset = data;
-				data = rjmp_bootloader;
-			}
-			
-			if ( currentAddress == USER_RESET_ADDR )
-			{
-				// Relocate app's reset rjmp and adjust offset for new address
-				data = (userReset + 0x1000 - USER_RESET_ADDR/2) & ~0x1000;
-			}
-		#endif
-		
-		boot_page_fill( currentAddress, data );
-		currentAddress += 2;
+		fill_flash( rq->wValue.word );
+		fill_flash( rq->wIndex.word );
+		if ( currentAddress % SPM_PAGESIZE == 0 )
+			bRequest = cmd_filled;
 	}
-	while ( len -= 2 );
 	
-	return (currentAddress % SPM_PAGESIZE) == 0;
+	prevCommand = bRequest;
+	return result;
 }
 
 static void leaveBootloader( void )
@@ -239,8 +221,7 @@ int main( void )
 			prevTxLen = usbTxLen;
 			wait_usb_interrupt();
 		}
-		while ( !(prevCommand != cmd_info &&
-				usbTxLen == USBPID_NAK && prevTxLen != USBPID_NAK) );
+		while ( !(usbTxLen == USBPID_NAK && prevTxLen != USBPID_NAK) );
 		
 		// Stops once we have a command and we've just transmitted the final reply
 		// back to host
@@ -249,9 +230,9 @@ int main( void )
 		
 		if ( prevCommand == cmd_erase )
 			erase_flash();
-		else if ( prevCommand == cmd_write )
+		else if ( prevCommand == cmd_filled )
 			write_flash();
-		else
+		else if ( prevCommand == cmd_exit )
 			break;
 	}
 	

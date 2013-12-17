@@ -124,7 +124,7 @@ int micronucleus_writeFlash(micronucleus* deviceHandle, unsigned int program_siz
   unsigned int  userReset;
   
   for (address = 0; address < deviceHandle->flash_size; address += deviceHandle->page_size) {
-  unsigned char unused = 1;
+    unsigned char unused = 1;
   
     // work around a bug in older bootloader versions
     if (deviceHandle->version.major == 1 && deviceHandle->version.minor <= 2
@@ -168,13 +168,23 @@ int micronucleus_writeFlash(micronucleus* deviceHandle, unsigned int program_siz
     res = page_length;
     if ( !unused ) // skip unused pages
     {
-      // ask microcontroller to write this page's data
-      res = usb_control_msg(deviceHandle->device,
-             USB_ENDPOINT_OUT| USB_TYPE_VENDOR | USB_RECIP_DEVICE,
-             1,
-             page_length, address,
-             page_buffer, page_length,
-             MICRONUCLEUS_USB_TIMEOUT);
+      // start
+      res = usb_control_msg(deviceHandle->device, 0xC0, 1, 0, address,
+          NULL, 0, MICRONUCLEUS_USB_TIMEOUT );
+      if (res != 0) return -1;
+      
+      int offset;
+      for ( offset = 0; offset < deviceHandle->page_size; offset += 4 )
+      {
+        int data0 = page_buffer [offset + 0] +
+                    page_buffer [offset + 1] * 0x100;
+        int data1 = page_buffer [offset + 2] +
+                    page_buffer [offset + 3] * 0x100;
+        res = usb_control_msg(deviceHandle->device, 0xC0, 3, data0, data1,
+            NULL, 0, MICRONUCLEUS_USB_TIMEOUT );
+        if (res != 0) return -1;
+      }
+      res = page_length;
     }
     
     // call progress update callback if that's a thing

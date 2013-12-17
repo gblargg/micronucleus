@@ -12,7 +12,7 @@
 
 // Uncomment to enable version 2 protocol that has host do part of reset
 // vector patching. Saves 36 bytes.
-//#define MICRONUCLEUS_VERSION_MAJOR 2
+#define MICRONUCLEUS_VERSION_MAJOR 2
 
 // Uncomment to delay rather than erase/write flash, so USB timing can be tested
 // without wearing out device
